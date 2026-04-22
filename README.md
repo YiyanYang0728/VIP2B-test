@@ -87,7 +87,7 @@ Options:
   -V, --version         Print version
 ```
 
-Parameters match the original `VIP2B.py` exactly:
+Parameter explanation:
 
 | Flag | Description | Default |
 |------|-------------|---------|
@@ -122,7 +122,7 @@ The pipeline produces **5 output folders**, matching the original VIP2B exactly:
 ```
 {output}/
 ├── 0.dige/                         Phase 1 — Tag extraction (Rust)
-│   ├── {sample}.fa.gz              Extracted 2bRAD tags (gzip FASTA)
+│   ├─ {sample}.fa.gz              Extracted 2bRAD tags (gzip FASTA)
 │   └── {sample}/
 │       └── {sample}.dige.stat.xls  Digest statistics (input reads / extracted tags / rate)
 │
