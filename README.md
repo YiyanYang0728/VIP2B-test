@@ -1,9 +1,5 @@
 # VIP2B
-High-performance reimplementation of the VIP2B virome profiler.  
-The digest step (the main bottleneck) is rewritten in Rust; all downstream  
-steps call the original Python scripts automatically as subprocesses.  
-A single command runs the full pipeline and produces output identical to the  
-original VIP2B.
+VIrome Profiler with type IIB restriction sites for WMS data
 
 ---
 
@@ -26,13 +22,11 @@ git clone <repo>
 cd VIP2B
 cargo build --release
 ```
-
 Add to PATH (optional):
 ```bash
 export PATH=$PATH:$PWD/target/release
 # Or copy to yout bin directory: cp target/release/VIP2B <your bin path>
 ```
-
 Download databases:
 ```bash
 mkdir -p database
@@ -152,9 +146,6 @@ The pipeline produces **5 output folders**, matching the original VIP2B exactly:
 ## File structure
 
 ```
-## File structure
-
-```
 VIP2B/
 ├── Cargo.toml                  Rust workspace definition
 ├── README.md
@@ -187,3 +178,4 @@ VIP2B/
     └── src/
         └── main.rs             Full pipeline source
 ```
+
