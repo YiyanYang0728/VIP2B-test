@@ -12,7 +12,7 @@ cargo build --release
 Add to PATH (optional):
 ```bash
 export PATH=$PATH:$PWD/target/release
-# Or copy to it your bin directory: cp target/release/VIP2B <your bin path>
+# Or copy it to your bin directory: cp target/release/VIP2B <your bin path>
 ```
 
 ```bash
