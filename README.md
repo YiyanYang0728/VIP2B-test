@@ -3,7 +3,17 @@ VIrome Profiler with type IIB restriction sites for WMS data
 
 ---
 
-## Requirements
+## Installation
+```bash
+git clone https://github.com/YiyanYang0728/VIP2B-test.git
+cd VIP2B
+cargo build --release
+```
+Add to PATH (optional):
+```bash
+export PATH=$PATH:$PWD/target/release
+# Or copy to yout bin directory: cp target/release/VIP2B <your bin path>
+```
 ```bash
 # Use the provided conda environment
 conda create -n VIP2B --file requirement.txt
@@ -14,19 +24,6 @@ mamba activate VIP2B
 ```
 Make sure the conda environment of VIP2B has been activated by running the above command before you run VIP2B everytime.
 
----
-
-## Installation
-```bash
-git clone <repo>
-cd VIP2B
-cargo build --release
-```
-Add to PATH (optional):
-```bash
-export PATH=$PATH:$PWD/target/release
-# Or copy to yout bin directory: cp target/release/VIP2B <your bin path>
-```
 Download databases:
 ```bash
 mkdir -p database
@@ -77,12 +74,11 @@ Options:
   -e <ENZYME[,...]>     Enzyme(s): comma-separated names or "all". Available: AlfI AloI BaeI BcgI BplI BsaXI BslFI Bsp24I CjeI CjePI CspCI FalI HaeIV Hin4I PpiI PsrI The default 8-enzyme set matches the standard database [default: AlfI,BcgI,BslFI,CjeI,CjePI,FalI,HaeIV,Hin4I]
   -d <PREFIX>           Database prefix — the original marisa file is used directly. (PREFIX = path without extension, e.g. /db/8Enzyme.Species.uniq) [default: /proj/spcrhs/spcrh01/spyya/software/VIP2B_1/target/release/../database/8Enzyme]
   -p <N>                Number of parallel processes/threads (more may require more memory) [default: 1]
-  -t <G5|M0.5>          Threshold for species identification. G
-                        : G-score filter applied in Rust (e.g. G2, G5). M{p}: MAP2B_ML.py is called automatically after the abundance step [default: M0.5]
+  -t <G5|M0.5>          Threshold for species identification. G<number>: G-score filter applied in Rust (e.g. G2, G5). M{fraction}: MAP2B_ML.py is called automatically after the abundance step [default: M0.5]
   -c <N>                Cut-off for database building (mkdb step only; not applied in Rust) [default: 30000]
   -f <FLOAT>            Threshold for coverage filtering: sequenced_tags / theoretical_tags [default: 0.6]
-      --intersection    Use intersection of tags between genomes (default: union). Applies to mkdb step only; stored here for pipeline compatibility
-      --batch-size <N>  Reads per parallel batch in digest phase [default: 100000]
+  --intersection        Use intersection of tags between genomes (default: union). Applies to mkdb step only; stored here for pipeline compatibility
+  --batch-size <N>      Reads per parallel batch in digest phase [default: 100000]
   -h, --help            Print help (see more with '--help')
   -V, --version         Print version
 ```
