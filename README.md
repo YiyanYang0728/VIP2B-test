@@ -12,8 +12,9 @@ cargo build --release
 Add to PATH (optional):
 ```bash
 export PATH=$PATH:$PWD/target/release
-# Or copy to yout bin directory: cp target/release/VIP2B <your bin path>
+# Or copy to it your bin directory: cp target/release/VIP2B <your bin path>
 ```
+
 ```bash
 # Use the provided conda environment
 conda create -n VIP2B --file requirement.txt
