@@ -5,7 +5,7 @@ VIrome Profiler with type IIB restriction sites for WMS data
 
 ## Installation
 ```bash
-git clone https://github.com/YiyanYang0728/VIP2B-test.git
+git clone https://github.com/YiyanYang0728/VIP2B.git
 cd VIP2B
 # Use the provided conda environment
 conda create -n VIP2B --file requirement.txt
