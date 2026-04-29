@@ -7,15 +7,6 @@ VIrome Profiler with type IIB restriction sites for WMS data
 ```bash
 git clone https://github.com/YiyanYang0728/VIP2B-test.git
 cd VIP2B
-cargo build --release
-```
-Add to PATH (optional):
-```bash
-export PATH=$PATH:$PWD/target/release
-# Or copy it to your bin directory: cp target/release/VIP2B <your bin path>
-```
-
-```bash
 # Use the provided conda environment
 conda create -n VIP2B --file requirement.txt
 conda activate VIP2B
@@ -24,6 +15,14 @@ mamba create -n VIP2B --file requirement.txt
 mamba activate VIP2B
 ```
 Make sure the conda environment of VIP2B has been activated by running the above command before you run VIP2B everytime.
+
+Build an executable software:
+```bash
+cargo build --release
+# Add the executive software to PATH:
+export PATH=$PATH:$PWD/target/release
+# Or copy it to your bin directory: cp target/release/VIP2B <your bin path>
+```
 
 Download databases:
 ```bash
