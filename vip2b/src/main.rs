@@ -156,9 +156,15 @@ const ALL_ENZYME_DEFS: &[(&str, &str)] = &[
     ("PsrI",   r"(?=([AGCT]{7}GAAC[AGCT]{6}TAC[AGCT]{7}))"),
 ];
 
+/// The standard 8-enzyme set that matches the default database.
+/// Used when -e all is specified (same as the default).
+const DEFAULT_8_ENZYMES: &[&str] = &[
+    "AlfI", "BcgI", "BslFI", "CjeI", "CjePI", "FalI", "HaeIV", "Hin4I",
+];
+
 fn select_enzymes(enzyme_arg: &str) -> Vec<Enzyme> {
     let wanted: Vec<&str> = if enzyme_arg.trim() == "all" {
-        ALL_ENZYME_DEFS.iter().map(|(n, _)| *n).collect()
+        DEFAULT_8_ENZYMES.to_vec()
     } else {
         enzyme_arg.split(',').map(str::trim).collect()
     };
@@ -170,7 +176,7 @@ fn select_enzymes(enzyme_arg: &str) -> Vec<Enzyme> {
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // §3  Streaming FASTQ / FASTA reader
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 
 fn open_reader(path: &str) -> Box<dyn BufRead + Send> {
     let f = File::open(path).unwrap_or_else(|e| panic!("Cannot open {path}: {e}"));
@@ -240,7 +246,7 @@ fn header_id(line: &str) -> String {
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // §4  Digest logic
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 
 struct TagRecord { id: String, seq: Vec<u8> }
 
@@ -321,7 +327,7 @@ fn digest_file(
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // §5  Species identification threshold (-t)
-// ══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
 
 #[derive(Clone)]
 enum FilterMode {
@@ -433,7 +439,7 @@ fn run_gscore_filter(sample_id: &str, xls_path: &str, outdir: &str, threshold: f
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // §6  Per-sample abundance via Python subprocess
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 
 fn run_abundance_script(
     parent_dir:  &str,
@@ -479,7 +485,7 @@ fn run_abundance_script(
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // §7  Sample list parsing  (matches VIP2B.py -i format)
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 
 struct SampleEntry { id: String, r1: String, r2: Option<String> }
 
@@ -502,7 +508,7 @@ fn parse_sample_list(path: &str) -> Vec<SampleEntry> {
     samples
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 // §8  CLI  — exact parameter parity with VIP2B.py
 //
 // NOTE: -o and -d use plain relative placeholder strings as default_value so
@@ -619,9 +625,9 @@ struct Args {
     batch_size: usize,
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// §9  Entry point
 // ══════════════════════════════════════════════════════════════════════════════
+// §9  Entry point
+// ═══════════════════════════════════════════════════════════════════════════════
 
 fn main() {
     let args = Args::parse();
@@ -680,7 +686,7 @@ fn main() {
     // ══════════════════════════════════════════════════════════════════════════
     // PHASE 1 — Tag extraction (digest)
     // ══════════════════════════════════════════════════════════════════════════
-    eprintln!("\n═══ Phase 1: Tag extraction ═══════════════════════════════════════");
+    eprintln!("\n═══ Phase 1: Tag extraction ══════════════════════════════════════");
 
     let digest_outputs: Vec<(String, String)> = samples.par_iter().map(|entry| {
         let out_fa    = format!("{digest_dir}/{}.fa.gz",              entry.id);
@@ -718,7 +724,7 @@ fn main() {
         (entry.id.clone(), out_fa)
     }).collect();
 
-    // ══════════════════════════════════════════════════════════════════════════
+    // ═════════════════════════════════════════════════════════════════════════
     // PHASE 2 — Qualitative abundance
     // ══════════════════════════════════════════════════════════════════════════
     eprintln!("\n═══ Phase 2: Qualitative abundance ════════════════════════════════");
@@ -811,7 +817,7 @@ fn main() {
 
     // ══════════════════════════════════════════════════════════════════════════
     // PHASE 5 — Quantitative abundance
-    // ═════════════════════════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════════════════
     eprintln!("\n═══ Phase 5: Quantitative abundance ═══════════════════════════════");
 
     let quan_dir     = format!("{output}/3.quan");
