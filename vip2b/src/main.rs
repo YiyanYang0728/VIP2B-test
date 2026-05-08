@@ -321,7 +321,7 @@ fn digest_file(
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // §5  Species identification threshold (-t)
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 
 #[derive(Clone)]
 enum FilterMode {
@@ -433,44 +433,21 @@ fn run_gscore_filter(sample_id: &str, xls_path: &str, outdir: &str, threshold: f
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // §6  Per-sample abundance via Python subprocess
-//
-// We call CalculateRelativeAbundance_Single2bEnzyme.py directly for each sample.
-// This means:
-//   • No marisa → TSV conversion needed (Python reads the marisa file natively)
-//   • Full parallel execution: one Python process per sample, launched by Rayon
-//   • Exact same output format as the original pipeline
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// Run abundance estimation for one sample by calling the Python script
-/// as a subprocess.  Called in parallel by Rayon (one process per sample).
-///
-/// Creates a single-line sample list, then invokes:
-///   python3 scripts/CalculateRelativeAbundance_Single2bEnzyme.py \
-///     -d DATABASE  -c CLASSIFY  -l SAMPLE_LIST  -t LEVEL  -o OUTDIR  -p 1  -ct THRESH
-/// Run CalculateRelativeAbundance_Single2bEnzyme.py for one sample.
-///
-/// Called TWICE per sample in Phase 2:
-///   1. With cov_thresh    → {abundance_dir}/{sample}/{sample}.xls
-///      Used for Abundance.tsv (only species with coverage ≥ threshold).
-///   2. With ct=0.0        → {coverage_dir}/{sample}/{sample}.xls
-///      Used for Coverage.tsv (all species regardless of coverage).
-///
-/// NOTE: the Python script appends the sample name to -o itself, so we
-/// pass the *parent* directory as -o.
 fn run_abundance_script(
-    parent_dir:  &str,    // passed as -o; script appends sample_id
+    parent_dir:  &str,
     sample_id:   &str,
     fa_path:     &str,
     database:    &str,
     classify:    &str,
     level:       &str,
-    ct:          f64,     // coverage threshold (-ct)
+    ct:          f64,
     scripts_dir: &std::path::Path,
 ) {
     fs::create_dir_all(&format!("{parent_dir}/{sample_id}"))
         .unwrap_or_else(|e| panic!("Cannot create {parent_dir}/{sample_id}: {e}"));
 
-    // Write a single-line sample list for this run
     let list_path = format!("{parent_dir}/{sample_id}/{sample_id}.ct{ct}.list");
     {
         let mut f = BufWriter::new(
@@ -500,8 +477,6 @@ fn run_abundance_script(
     }
 }
 
-/// Phase 2 entry point for one sample: runs the abundance script twice.
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // §7  Sample list parsing  (matches VIP2B.py -i format)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -529,17 +504,40 @@ fn parse_sample_list(path: &str) -> Vec<SampleEntry> {
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // §8  CLI  — exact parameter parity with VIP2B.py
+//
+// NOTE: -o and -d use plain relative placeholder strings as default_value so
+// that `--help` never exposes the user's absolute directory paths.
+// The actual paths are resolved at runtime in main() via resolve_output() and
+// resolve_database() below.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-fn default_output() -> String {
-    format!("{}/VIP2B_result", env::current_dir().unwrap().display())
+/// Sentinel value used in Args for -o when no path is provided.
+const DEFAULT_OUTPUT_SENTINEL: &str = "VIP2B_result";
+
+/// Sentinel value used in Args for -d when no path is provided.
+const DEFAULT_DATABASE_SENTINEL: &str = "database/8Enzyme";
+
+/// Resolve the output directory: if the user left it at the sentinel, make it
+/// absolute relative to the current working directory.
+fn resolve_output(raw: &str) -> String {
+    if raw == DEFAULT_OUTPUT_SENTINEL {
+        format!("{}/VIP2B_result", env::current_dir().unwrap().display())
+    } else {
+        raw.to_string()
+    }
 }
 
-fn default_database() -> String {
-    let bin = env::current_exe().unwrap_or_default();
-    bin.parent().unwrap_or(std::path::Path::new("."))
-        .join("../database/8Enzyme")
-        .to_string_lossy().into_owned()
+/// Resolve the database prefix: if the user left it at the sentinel, locate it
+/// relative to the binary (matching the original default_database() behaviour).
+fn resolve_database(raw: &str) -> String {
+    if raw == DEFAULT_DATABASE_SENTINEL {
+        let bin = env::current_exe().unwrap_or_default();
+        let bin_dir = bin.parent().unwrap_or(std::path::Path::new("."));
+        bin_dir.join("../database/8Enzyme")
+            .to_string_lossy().into_owned()
+    } else {
+        raw.to_string()
+    }
 }
 
 #[derive(Parser)]
@@ -568,8 +566,8 @@ struct Args {
     #[arg(short = 'i', value_name = "FILE")]
     input: String,
 
-    /// Output directory
-    #[arg(short = 'o', default_value_t = default_output(), value_name = "DIR")]
+    /// Output directory [default: VIP2B_result in current directory]
+    #[arg(short = 'o', default_value = DEFAULT_OUTPUT_SENTINEL, value_name = "DIR")]
     output: String,
 
     /// Taxonomy level [Class|Order|Family|Genus|Species]
@@ -587,9 +585,9 @@ struct Args {
           value_name = "ENZYME[,...]")]
     enzyme: String,
 
-    /// Database prefix — the original marisa file is used directly.
-    /// (PREFIX = path without extension, e.g. /db/8Enzyme.Species.uniq)
-    #[arg(short = 'd', default_value_t = default_database(), value_name = "PREFIX")]
+    /// Database prefix (without extension, e.g. /path/to/database/8Enzyme)
+    /// [default: database/8Enzyme relative to the vip2b binary]
+    #[arg(short = 'd', default_value = DEFAULT_DATABASE_SENTINEL, value_name = "PREFIX")]
     database: String,
 
     /// Number of parallel processes/threads (more may require more memory)
@@ -623,10 +621,16 @@ struct Args {
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // §9  Entry point
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 
 fn main() {
     let args = Args::parse();
+
+    // ── Resolve -o and -d to real absolute paths ───────────────────────────────
+    // (args.output / args.database may hold sentinel placeholders when the user
+    //  did not supply those flags; resolve them here before any path is used.)
+    let output   = resolve_output(&args.output).trim_end_matches('/').to_string();
+    let database = resolve_database(&args.database);
 
     // ── Parse -t threshold ────────────────────────────────────────────────────
     let filter_mode = parse_threshold(&args.threshold);
@@ -668,8 +672,6 @@ fn main() {
     let nuc_table  = build_nuc_table();
     let comp_table = build_comp_table();
 
-    // Strip any trailing slash from -o to avoid double-slash in paths
-    let output = args.output.trim_end_matches('/').to_string();
     let digest_dir    = format!("{output}/0.dige");
     let abundance_dir = format!("{output}/1.qual");
     fs::create_dir_all(&digest_dir)   .expect("Cannot create digest dir");
@@ -677,14 +679,11 @@ fn main() {
 
     // ══════════════════════════════════════════════════════════════════════════
     // PHASE 1 — Tag extraction (digest)
-    // Samples processed in parallel; within each sample reads are batched.
-    // Paired-end: R1 and R2 digested sequentially into the same .fa.gz.
     // ══════════════════════════════════════════════════════════════════════════
     eprintln!("\n═══ Phase 1: Tag extraction ═══════════════════════════════════════");
 
     let digest_outputs: Vec<(String, String)> = samples.par_iter().map(|entry| {
         let out_fa    = format!("{digest_dir}/{}.fa.gz",              entry.id);
-        // dige_stat.py globs {digest_dir}/{smp}/{smp}.dige.stat.xls
         let smp_dir   = format!("{digest_dir}/{}", entry.id);
         let out_stat  = format!("{smp_dir}/{}.dige.stat.xls",          entry.id);
         fs::create_dir_all(&smp_dir).expect("Cannot create per-sample digest dir");
@@ -699,7 +698,6 @@ fn main() {
         eprintln!("INFO [{smp}]: R1={r1}{pe}", smp=entry.id, r1=entry.r1,
             pe=entry.r2.as_deref().map(|r| format!("  R2={r}")).unwrap_or_default());
 
-        // value_len=50 (default, matches sequence_digestion.py -l default)
         digest_file(&entry.r1, &enzymes, &nuc_table, &comp_table,
                     50, args.batch_size, &writer, &total_ori, &total_dig);
         if let Some(r2) = &entry.r2 {
@@ -721,26 +719,21 @@ fn main() {
     }).collect();
 
     // ══════════════════════════════════════════════════════════════════════════
-    // PHASE 2 — Qualitative abundance  (run_qual equivalent)
-    //
-    // Run CalculateRelativeAbundance with ct=0 against {database}.{level}.uniq
-    // (the full DB, no coverage filter) to discover all candidate species.
+    // PHASE 2 — Qualitative abundance
     // ══════════════════════════════════════════════════════════════════════════
     eprintln!("\n═══ Phase 2: Qualitative abundance ════════════════════════════════");
 
-    let db_parent = std::path::Path::new(&args.database)
+    let db_parent = std::path::Path::new(&database)
         .parent()
         .map(|p| p.to_string_lossy().into_owned())
         .unwrap_or_else(|| ".".to_string());
     let classify_path = format!("{db_parent}/abfh_classify_with_speciename.txt.gz");
     let scripts_dir   = find_sibling("scripts");
 
-    // Qual DB prefix: {database}.{level}.uniq  (e.g. 8Enzyme.Species.uniq)
-    let qual_db = format!("{}.{}.uniq", args.database, args.level);
+    let qual_db = format!("{}.{}.uniq", database, args.level);
     let qual_dir = format!("{output}/1.qual");
     fs::create_dir_all(&qual_dir).expect("Cannot create qual dir");
 
-    // Run in parallel across samples, ct=0 (no coverage filter)
     digest_outputs.par_iter().for_each(|(sample_id, fa_path)| {
         run_abundance_script(
             &qual_dir, sample_id, fa_path,
@@ -749,9 +742,7 @@ fn main() {
     });
 
     // ══════════════════════════════════════════════════════════════════════════
-    // PHASE 3 — Species identification filter  (run_qual pred.result)
-    //
-    // MAP2B_ML.py or gscore_filter.py on qual/{smp}/{smp}.xls → pred.result
+    // PHASE 3 — Species identification filter
     // ══════════════════════════════════════════════════════════════════════════
     eprintln!("\n═══ Phase 3: Species identification filter ════════════════════════");
 
@@ -765,12 +756,7 @@ fn main() {
     });
 
     // ══════════════════════════════════════════════════════════════════════════
-    // PHASE 4 — Build per-sample quantitative database  (run_mkdb equivalent)
-    //
-    // CreatDB4AllLevel.py reads pred.result and builds a per-sample marisa DB
-    // containing only the species that passed the species ID filter.
-    // Output: mkdb/{smp}/{smp}.marisa + mkdb/{smp}/{smp}.stat.xls
-    // Also write mkdb/{smp}/reads.list  ({smp}<TAB>{fa_path})
+    // PHASE 4 — Build per-sample quantitative database
     // ══════════════════════════════════════════════════════════════════════════
     eprintln!("\n═══ Phase 4: Build per-sample quantitative databases ══════════════");
 
@@ -785,7 +771,6 @@ fn main() {
         fs::create_dir_all(&smp_mkdb)
             .unwrap_or_else(|e| panic!("Cannot create {smp_mkdb}: {e}"));
 
-        // reads.list used by quan step: {smp}<TAB>{fa_path}
         let reads_list = format!("{smp_mkdb}/reads.list");
         {
             let mut f = BufWriter::new(
@@ -800,14 +785,13 @@ fn main() {
             return;
         }
 
-        // Output prefix: mkdb/{smp}/{smp}  → produces {prefix}.marisa + {prefix}.stat.xls
         let out_prefix = format!("{smp_mkdb}/{sample_id}");
         eprintln!("INFO [{sample_id}]: CreatDB4AllLevel.py");
 
         let mut cmd = std::process::Command::new("python3");
         cmd.args([
             mkdb_script.to_str().unwrap_or("scripts/CreatDB4AllLevel.py"),
-            "-d", &args.database,
+            "-d", &database,
             "-c", &classify_path,
             "-p", &pred_result,
             "-o", &out_prefix,
@@ -826,16 +810,12 @@ fn main() {
     });
 
     // ══════════════════════════════════════════════════════════════════════════
-    // PHASE 5 — Quantitative abundance  (run_quan equivalent)
-    //
-    // Two runs per sample against the per-sample mkdb:
-    //   a. ct={cov_thresh}  → quan/{smp}/{smp}.xls  (for Abundance.tsv)
-    //   b. ct=0             → coverage/{smp}/{smp}.xls (for Coverage.tsv, all species)
-    // ══════════════════════════════════════════════════════════════════════════
+    // PHASE 5 — Quantitative abundance
+    // ═════════════════════════════════════════════════════════════════════════
     eprintln!("\n═══ Phase 5: Quantitative abundance ═══════════════════════════════");
 
     let quan_dir     = format!("{output}/3.quan");
-    let coverage_dir = format!("{output}/3.quan/.cov");  // hidden subdir, not a 6th top-level folder
+    let coverage_dir = format!("{output}/3.quan/.cov");
     fs::create_dir_all(&quan_dir)    .expect("Cannot create quan dir");
     fs::create_dir_all(&coverage_dir).expect("Cannot create coverage dir");
 
@@ -851,7 +831,6 @@ fn main() {
             return;
         }
 
-        // Run twice: once with coverage threshold (Abundance), once without (Coverage)
         for (out_dir, ct) in [(&quan_dir, args.cov_thresh), (&coverage_dir, 0.0_f64)] {
             fs::create_dir_all(out_dir)
                 .unwrap_or_else(|e| panic!("Cannot create {out_dir}: {e}"));
@@ -861,9 +840,9 @@ fn main() {
                     quan_script.to_str().unwrap_or("scripts/CalculateRelativeAbundance_Single2bEnzyme.py"),
                     "-d", &mkdb_prefix,
                     "-c", &classify_path,
-                    "-l", &reads_list,   // reads.list written in Phase 4
+                    "-l", &reads_list,
                     "-t", &args.level,
-                    "-o", out_dir,       // script appends sample_id itself
+                    "-o", out_dir,
                     "-p", "1",
                     "-ct", &ct.to_string(),
                 ])
@@ -877,14 +856,13 @@ fn main() {
     });
 
     // ══════════════════════════════════════════════════════════════════════════
-    // PHASE 6 — Merge results across all samples  (run_stat equivalent)
+    // PHASE 6 — Merge results across all samples
     // ══════════════════════════════════════════════════════════════════════════
     eprintln!("\n═══ Phase 6: Merging results ══════════════════════════════════════");
 
     let stat_dir = format!("{output}/4.stat");
     fs::create_dir_all(&stat_dir).expect("Cannot create stat dir");
 
-    // abd.list → quan/{smp}/{smp}.xls  (filtered, for Abundance.tsv)
     let abd_list_path = format!("{stat_dir}/abd.list");
     {
         let mut f = BufWriter::new(File::create(&abd_list_path).expect("Cannot create abd.list"));
@@ -893,7 +871,6 @@ fn main() {
         }
     }
 
-    // cov.list → coverage/{smp}/{smp}.xls  (unfiltered, for Coverage.tsv)
     let cov_list_path = format!("{stat_dir}/cov.list");
     {
         let mut f = BufWriter::new(File::create(&cov_list_path).expect("Cannot create cov.list"));
@@ -926,7 +903,6 @@ fn main() {
         "-o", &format!("{stat_dir}/Coverage.tsv"),
     ]);
 
-    // Tags.tsv — digest statistics
     let digest_list_path = format!("{stat_dir}/digest.list");
     {
         let mut f = BufWriter::new(File::create(&digest_list_path).expect("Cannot create digest.list"));
@@ -941,7 +917,6 @@ fn main() {
         "-o", &format!("{stat_dir}/Tags.tsv"),
     ]);
 
-    // anno_abund_processor.py (optional — needs database metadata)
     let metadata = format!("{db_parent}/metadata.tsv.gz");
     if std::path::Path::new(&metadata).exists() {
         run_merge("anno_abund_processor.py", &[

@@ -63,22 +63,23 @@ sample2    /data/sample2_R1.fastq.gz    /data/sample2_R2.fastq.gz
 ## parameters
 ```
 VIP2B -h
-Unified 2bRAD virome profiler
+Unified 2bRAD virome profiler (digest + abundance)
 
 Usage: VIP2B [OPTIONS] -i <FILE>
 
 Options:
   -i <FILE>             Sample list TSV (2-col SE or 3-col PE; # lines ignored) Format: sample_id <TAB> reads.fastq.gz [<TAB> reads_R2.fastq.gz]
-  -o <DIR>              Output directory [default: /proj/spcrhs/spcrh01/spyya/software/VIP2B_1/VIP2B_result]
+  -o <DIR>              Output directory [default: VIP2B_result in current directory] [default: VIP2B_result]
   -l <LEVEL>            Taxonomy level [Class|Order|Family|Genus|Species] [default: Species] [possible values: Class, Order, Family, Genus, Species]
-  -e <ENZYME[,...]>     Enzyme(s): comma-separated names or "all". Available: AlfI,BcgI,BslFI,CjeI,CjePI,FalI,HaeIV,Hin4I. The default 8-enzyme set matches the standard database [default: AlfI,BcgI,BslFI,CjeI,CjePI,FalI,HaeIV,Hin4I]
-  -d <PREFIX>           Database prefix — the original marisa file is used directly. (PREFIX = path without extension, e.g. /db/8Enzyme.Species.uniq) [default: /proj/spcrhs/spcrh01/spyya/software/VIP2B_1/target/release/../database/8Enzyme]
+  -e <ENZYME[,...]>     Enzyme(s): comma-separated names or "all". Available: AlfI,BcgI,BslFI,CjeI,CjePI,FalI,HaeIV,Hin4I The default 8-enzyme set matches the standard database [default: AlfI,BcgI,BslFI,CjeI,CjePI,FalI,HaeIV,Hin4I]
+  -d <PREFIX>           Database prefix (without extension, e.g. /path/to/database/8Enzyme) [default: database/8Enzyme relative to the vip2b binary] [default: database/8Enzyme]
   -p <N>                Number of parallel processes/threads (more may require more memory) [default: 1]
-  -t <G5|M0.5>          Threshold for species identification. G<number>: G-score filter applied in Rust (e.g. G2, G5). M{fraction}: MAP2B_ML.py is called automatically after the abundance step [default: M0.5]
+  -t <G5|M0.5>          Threshold for species identification. G
+                        : G-score filter applied in Rust (e.g. G2, G5). M{p}: MAP2B_ML.py is called automatically after the abundance step [default: M0.5]
   -c <N>                Cut-off for database building (mkdb step only; not applied in Rust) [default: 30000]
   -f <FLOAT>            Threshold for coverage filtering: sequenced_tags / theoretical_tags [default: 0.6]
-  --intersection        Use intersection of tags between genomes (default: union). Applies to mkdb step only; stored here for pipeline compatibility
-  --batch-size <N>      Reads per parallel batch in digest phase [default: 100000]
+      --intersection    Use intersection of tags between genomes (default: union). Applies to mkdb step only; stored here for pipeline compatibility
+      --batch-size <N>  Reads per parallel batch in digest phase [default: 100000]
   -h, --help            Print help (see more with '--help')
   -V, --version         Print version
 ```
