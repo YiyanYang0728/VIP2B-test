@@ -91,7 +91,7 @@ Parameter explanation:
 | `-i` | Sample list TSV (2-col SE or 3-col PE; required) | — |
 | `-o` | Output directory | `./VIP2B_result` |
 | `-l` | Taxonomy level: `Class` / `Order` / `Family` / `Genus` / `Species` | `Species` |
-| `-e` | Enzyme(s), comma-separated, or `all` for all 16 | `AlfI,BcgI,BslFI,CjeI,CjePI,FalI,HaeIV,Hin4I` |
+| `-e` | Enzyme(s), comma-separated, or `all` for all 8 enzymes | `AlfI,BcgI,BslFI,CjeI,CjePI,FalI,HaeIV,Hin4I` |
 | `-d` | Database prefix — path without extension (e.g. `/db/8Enzyme`) | `../database/8Enzyme` |
 | `-p` | Number of parallel processes/threads | `1` |
 | `-t` | Species ID threshold: `G{n}` (G-score) or `M{p}` (ML probability) | `M0.5` |
