@@ -580,8 +580,7 @@ struct Args {
     level: String,
 
     /// Enzyme(s): comma-separated names or "all".
-    /// Available: AlfI AloI BaeI BcgI BplI BsaXI BslFI Bsp24I
-    ///            CjeI CjePI CspCI FalI HaeIV Hin4I PpiI PsrI
+    /// Available: AlfI,BcgI,BslFI,CjeI,CjePI,FalI,HaeIV,Hin4I
     /// The default 8-enzyme set matches the standard database.
     #[arg(short = 'e',
           default_value = "AlfI,BcgI,BslFI,CjeI,CjePI,FalI,HaeIV,Hin4I",

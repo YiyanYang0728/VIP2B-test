@@ -8,10 +8,10 @@ VIrome Profiler with type IIB restriction sites for WMS data
 git clone https://github.com/YiyanYang0728/VIP2B.git
 cd VIP2B
 # Use the provided conda environment
-conda create -n VIP2B --file requirement.txt
+conda create -n VIP2B -c conda-forge --file requirement.txt
 conda activate VIP2B
 # If you have mamba, run
-mamba create -n VIP2B --file requirement.txt
+mamba create -n VIP2B -c conda-forge --file requirement.txt
 mamba activate VIP2B
 ```
 Make sure the conda environment of VIP2B has been activated by running the above command before you run VIP2B everytime.
@@ -71,7 +71,7 @@ Options:
   -i <FILE>             Sample list TSV (2-col SE or 3-col PE; # lines ignored) Format: sample_id <TAB> reads.fastq.gz [<TAB> reads_R2.fastq.gz]
   -o <DIR>              Output directory [default: /proj/spcrhs/spcrh01/spyya/software/VIP2B_1/VIP2B_result]
   -l <LEVEL>            Taxonomy level [Class|Order|Family|Genus|Species] [default: Species] [possible values: Class, Order, Family, Genus, Species]
-  -e <ENZYME[,...]>     Enzyme(s): comma-separated names or "all". Available: AlfI AloI BaeI BcgI BplI BsaXI BslFI Bsp24I CjeI CjePI CspCI FalI HaeIV Hin4I PpiI PsrI The default 8-enzyme set matches the standard database [default: AlfI,BcgI,BslFI,CjeI,CjePI,FalI,HaeIV,Hin4I]
+  -e <ENZYME[,...]>     Enzyme(s): comma-separated names or "all". Available: AlfI,BcgI,BslFI,CjeI,CjePI,FalI,HaeIV,Hin4I. The default 8-enzyme set matches the standard database [default: AlfI,BcgI,BslFI,CjeI,CjePI,FalI,HaeIV,Hin4I]
   -d <PREFIX>           Database prefix — the original marisa file is used directly. (PREFIX = path without extension, e.g. /db/8Enzyme.Species.uniq) [default: /proj/spcrhs/spcrh01/spyya/software/VIP2B_1/target/release/../database/8Enzyme]
   -p <N>                Number of parallel processes/threads (more may require more memory) [default: 1]
   -t <G5|M0.5>          Threshold for species identification. G<number>: G-score filter applied in Rust (e.g. G2, G5). M{fraction}: MAP2B_ML.py is called automatically after the abundance step [default: M0.5]
